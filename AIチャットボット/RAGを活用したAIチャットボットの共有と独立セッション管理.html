@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAGを活用したAIチャットボットの共有と独立セッション管理</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+    <!-- ヘッダー -->
+    <header class="text-center mb-12">
+      <h1 class="text-3xl font-bold text-indigo-800 mb-3">RAGを活用したAIチャットボットの共有と独立セッション管理</h1>
+      <p class="text-gray-600 text-lg max-w-3xl mx-auto">AIフォルダをベクトル化して活用するチャットボットを、URLで共有しつつも各ユーザーに独立したチャット体験を提供する方法</p>
+    </header>
+
+    <!-- コンセプト説明 -->
+    <section class="mb-12 bg-white rounded-xl shadow-md overflow-hidden">
+      <div class="bg-indigo-700 text-white py-3 px-6">
+        <h2 class="text-xl font-semibold">システム概要</h2>
+      </div>
+      <div class="p-6">
+        <div class="grid md:grid-cols-2 gap-8">
+          <div>
+            <h3 class="text-lg font-semibold text-indigo-700 mb-4">基本コンセプト</h3>
+            <ul class="space-y-3">
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-indigo-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>AIフォルダ内のファイルをベクトル化してデータベースに格納</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-indigo-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>1つのAIフォルダに対して1つのAIチャットボットを作成</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-indigo-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>チャットボットごとに固有のURLを発行して共有可能</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-indigo-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>URLにアクセスした各ユーザーは独立したチャットセッションを持つ</span>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-indigo-700 mb-4">キーポイント</h3>
+            <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+              <ul class="space-y-3">
+                <li class="flex items-start">
+                  <span class="bg-indigo-100 text-indigo-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 font-semibold">1</span>
+                  <div>
+                    <p class="font-medium">データベースは必須ではない</p>
+                    <p class="text-sm text-gray-600">会話履歴を永続化する必要がない場合、データベースは不要</p>
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <span class="bg-indigo-100 text-indigo-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 font-semibold">2</span>
+                  <div>
+                    <p class="font-medium">複数ユーザーの同時接続に対応</p>
+                    <p class="text-sm text-gray-600">セッションIDにより各ユーザーのコンテキストを分離</p>
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <span class="bg-indigo-100 text-indigo-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 font-semibold">3</span>
+                  <div>
+                    <p class="font-medium">シンプルなURL設計</p>
+                    <p class="text-sm text-gray-600">URLにセッション情報を含める必要なし</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- システム構成図 -->
+    <section class="mb-12 bg-white rounded-xl shadow-md overflow-hidden">
+      <div class="bg-blue-700 text-white py-3 px-6">
+        <h2 class="text-xl font-semibold">システム構成</h2>
+      </div>
+      <div class="p-6">
+        <div class="flex flex-wrap">
+          <!-- システム図 -->
+          <div class="w-full lg:w-3/5 mb-6 lg:mb-0 lg:pr-6">
+            <div class="border rounded-lg p-4 bg-gray-50 h-full">
+              <!-- システムの構成図 -->
+              <div class="flex flex-col">
+                <!-- バックエンド部分 -->
+                <div class="bg-gray-100 rounded-lg p-4 mb-6 border border-gray-200 relative">
+                  <div class="absolute top-0 left-0 bg-gray-700 text-white text-xs px-2 py-1 rounded-tl-lg rounded-br-lg">バックエンド</div>
+                  <div class="mt-4 flex flex-wrap justify-around items-center">
+                    <!-- AIフォルダ -->
+                    <div class="bg-blue-100 border border-blue-300 rounded-lg p-3 m-2 w-40 text-center">
+                      <div class="font-medium text-blue-800">AIフォルダ</div>
+                      <div class="text-xs text-blue-600 mt-1">PDFs, DOCs, TXTs...</div>
+                    </div>
+                    
+                    <!-- 矢印 -->
+                    <div class="transform rotate-0 md:rotate-90 lg:rotate-0 text-gray-400 m-2">→</div>
+                    
+                    <!-- ベクトルDB -->
+                    <div class="bg-red-100 border border-red-300 rounded-lg p-3 m-2 w-40 text-center">
+                      <div class="font-medium text-red-800">ベクトルDB</div>
+                      <div class="text-xs text-red-600 mt-1">埋め込みベクトル</div>
+                    </div>
+                    
+                    <!-- 矢印 -->
+                    <div class="transform rotate-0 md:rotate-90 lg:rotate-0 text-gray-400 m-2">→</div>
+                    
+                    <!-- RAGエンジン -->
+                    <div class="bg-green-100 border border-green-300 rounded-lg p-3 m-2 w-40 text-center">
+                      <div class="font-medium text-green-800">RAGエンジン</div>
+                      <div class="text-xs text-green-600 mt-1">検索＋生成</div>
+                    </div>
+                  </div>
+                  
+                  <!-- セッション管理 -->
+                  <div class="mt-4 bg-purple-100 border border-purple-300 rounded-lg p-3 mx-auto max-w-md">
+                    <div class="font-medium text-purple-800 text-center mb-2">セッション管理</div>
+                    <div class="flex flex-wrap justify-center">
+                      <div class="bg-white m-1 p-2 rounded border border-purple-200 text-xs text-purple-700 w-24 text-center">
+                        セッションID: 001
+                      </div>
+                      <div class="bg-white m-1 p-2 rounded border border-purple-200 text-xs text-purple-700 w-24 text-center">
+                        セッションID: 002
+                      </div>
+                      <div class="bg-white m-1 p-2 rounded border border-purple-200 text-xs text-purple-700 w-24 text-center">
+                        セッションID: 003
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- URL部分 -->
+                <div class="flex justify-center mb-4">
+                  <div class="bg-yellow-100 border border-yellow-300 rounded-full px-4 py-2 text-center max-w-md">
+                    <span class="font-medium text-yellow-800">https://example.com/ai-chat/finance-bot</span>
+                  </div>
+                </div>
+                
+                <!-- ユーザー部分 -->
+                <div class="flex justify-around mb-4">
+                  <div class="flex flex-col items-center">
+                    <div class="bg-orange-100 border border-orange-300 rounded-full h-12 w-12 flex items-center justify-center mb-2">
+                      <span class="font-bold text-orange-800">U1</span>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded p-2 shadow-sm text-xs w-28 text-center">
+                      <div class="font-medium">ユーザー1のチャット</div>
+                    </div>
+                  </div>
+                  
+                  <div class="flex flex-col items-center">
+                    <div class="bg-orange-100 border border-orange-300 rounded-full h-12 w-12 flex items-center justify-center mb-2">
+                      <span class="font-bold text-orange-800">U2</span>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded p-2 shadow-sm text-xs w-28 text-center">
+                      <div class="font-medium">ユーザー2のチャット</div>
+                    </div>
+                  </div>
+                  
+                  <div class="flex flex-col items-center">
+                    <div class="bg-orange-100 border border-orange-300 rounded-full h-12 w-12 flex items-center justify-center mb-2">
+                      <span class="font-bold text-orange-800">U3</span>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded p-2 shadow-sm text-xs w-28 text-center">
+                      <div class="font-medium">ユーザー3のチャット</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- システム説明 -->
+          <div class="w-full lg:w-2/5">
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 h-full">
+              <h3 class="font-semibold text-blue-800 mb-3">システム構成の特徴</h3>
+              <ul class="space-y-4">
+                <li class="flex items-start">
+                  <div class="bg-blue-200 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 font-semibold">1</div>
+                  <div>
+                    <p class="font-medium text-blue-900">共通のナレッジベース</p>
+                    <p class="text-sm text-blue-800">AIフォルダ内のファイルは一度ベクトル化され、すべてのユーザーからの質問に対して同じナレッジベースが使用されます。</p>
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <div class="bg-blue-200 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 font-semibold">2</div>
+                  <div>
+                    <p class="font-medium text-blue-900">独立したセッション</p>
+                    <p class="text-sm text-blue-800">セッション管理機能により、同じURLからアクセスしても各ユーザーは独自の会話コンテキストを持ちます。</p>
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <div class="bg-blue-200 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 font-semibold">3</div>
+                  <div>
+                    <p class="font-medium text-blue-900">シンプルな共有方法</p>
+                    <p class="text-sm text-blue-800">URLはシンプルで共有しやすく、アクセスするだけで新しいセッションが自動的に作成されます。</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 処理フロー -->
+    <section class="mb-12 bg-white rounded-xl shadow-md overflow-hidden">
+      <div class="bg-green-700 text-white py-3 px-6">
+        <h2 class="text-xl font-semibold">処理フロー</h2>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <!-- フロー図 -->
+          <div class="lg:col-span-3">
+            <!-- 初回アクセス -->
+            <div class="mb-8">
+              <h3 class="text-lg font-semibold text-green-700 mb-3">初回アクセス時</h3>
+              <div class="flex flex-col md:flex-row items-center justify-center">
+                <div class="bg-orange-100 rounded-lg p-3 m-2 text-center w-40">
+                  <div class="font-medium text-orange-800">ユーザー</div>
+                  <div class="text-xs text-orange-600 mt-1">チャットボットURLにアクセス</div>
+                </div>
+                
+                <div class="transform rotate-90 md:rotate-0 text-gray-400 m-1">→</div>
+                
+                <div class="bg-indigo-100 rounded-lg p-3 m-2 text-center w-40">
+                  <div class="font-medium text-indigo-800">ブラウザ</div>
+                  <div class="text-xs text-indigo-600 mt-1">セッションID生成</div>
+                  <div class="text-xs text-indigo-600">localStorageに保存</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 質問送信時 -->
+            <div>
+              <h3 class="text-lg font-semibold text-green-700 mb-3">質問送信時</h3>
+              <div class="flex flex-wrap justify-center items-center">
+                <div class="flex flex-col items-center m-1">
+                  <div class="bg-orange-100 rounded-lg p-3 text-center w-32">
+                    <div class="font-medium text-orange-800">ユーザー</div>
+                    <div class="text-xs text-orange-600 mt-1">質問入力</div>
+                  </div>
+                  <div class="h-6 border-l border-gray-300"></div>
+                </div>
+                
+                <div class="flex flex-col items-center m-1">
+                  <div class="bg-indigo-100 rounded-lg p-3 text-center w-32">
+                    <div class="font-medium text-indigo-800">ブラウザ</div>
+                    <div class="text-xs text-indigo-600 mt-1">メッセージ＋セッションID送信</div>
+                  </div>
+                  <div class="h-6 border-l border-gray-300"></div>
+                </div>
+                
+                <div class="flex flex-col items-center m-1">
+                  <div class="bg-blue-100 rounded-lg p-3 text-center w-32">
+                    <div class="font-medium text-blue-800">サーバー</div>
+                    <div class="text-xs text-blue-600 mt-1">セッション取得/初期化</div>
+                  </div>
+                  <div class="h-6 border-l border-gray-300"></div>
+                </div>
+                
+                <div class="flex flex-col items-center m-1">
+                  <div class="bg-red-100 rounded-lg p-3 text-center w-32">
+                    <div class="font-medium text-red-800">ベクトルDB</div>
+                    <div class="text-xs text-red-600 mt-1">関連情報検索</div>
+                  </div>
+                  <div class="h-6 border-l border-gray-300"></div>
+                </div>
+                
+                <div class="flex flex-col items-center m-1">
+                  <div class="bg-green-100 rounded-lg p-3 text-center w-32">
+                    <div class="font-medium text-green-800">RAGエンジン</div>
+                    <div class="text-xs text-green-600 mt-1">AI回答生成</div>
+                  </div>
+                  <div class="h-6 border-l border-gray-300"></div>
+                </div>
+              </div>
+              
+              <!-- 戻りの矢印 -->
+              <div class="flex justify-center mt-2">
+                <div class="border-t border-gray-300 w-3/4"></div>
+              </div>
+              
+              <div class="flex flex-wrap-reverse justify-center items-center mt-2">
+                <div class="flex flex-col items-center m-1">
+                  <div class="h-6 border-l border-gray-300"></div>
+                  <div class="bg-orange-100 rounded-lg p-3 text-center w-32">
+                    <div class="font-medium text-orange-800">ユーザー</div>
+                    <div class="text-xs text-orange-600 mt-1">回答表示</div>
+                  </div>
+                </div>
+                
+                <div class="flex flex-col items-center m-1">
+                  <div class="h-6 border-l border-gray-300"></div>
+                  <div class="bg-indigo-100 rounded-lg p-3 text-center w-32">
+                    <div class="font-medium text-indigo-800">ブラウザ</div>
+                    <div class="text-xs text-indigo-600 mt-1">会話履歴更新</div>
+                  </div>
+                </div>
+                
+                <div class="flex flex-col items-center m-1">
+                  <div class="h-6 border-l border-gray-300"></div>
+                  <div class="bg-blue-100 rounded-lg p-3 text-center w-32">
+                    <div class="font-medium text-blue-800">サーバー</div>
+                    <div class="text-xs text-blue-600 mt-1">会話履歴更新（任意）</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- フロー説明 -->
+          <div class="lg:col-span-2">
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100 h-full">
+              <h3 class="font-semibold text-green-800 mb-3">フローのポイント</h3>
+              <ul class="space-y-4">
+                <li class="flex items-start">
+                  <div class="bg-green-200 text-green-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 font-semibold">1</div>
+                  <div>
+                    <p class="font-medium text-green-900">自動セッション作成</p>
+                    <p class="text-sm text-green-800">初回アクセス時にブラウザで自動的にセッションIDを生成し保存。以降のリクエストでこのIDを使用します。</p>
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <div class="bg-green-200 text-green-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 font-semibold">2</div>
+                  <div>
+                    <p class="font-medium text-green-900">RAGプロセス</p>
+                    <p class="text-sm text-green-800">質問に関連する情報をベクトルDBから検索し、その情報とユーザーの質問を組み合わせてAI回答を生成します。</p>
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <div class="bg-green-200 text-green-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 font-semibold">3</div>
+                  <div>
+                    <p class="font-medium text-green-900">柔軟な履歴管理</p>
+                    <p class="text-sm text-green-800">会話履歴はクライアント側（ブラウザ）のみで管理することも、サーバー側でも管理することも可能です。永続化が不要ならDBは必須ではありません。</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 実装コード例 -->
+    <section class="mb-12 bg-white rounded-xl shadow-md overflow-hidden">
+      <div class="bg-gray-700 text-white py-3 px-6">
+        <h2 class="text-xl font-semibold">実装コード例</h2>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- フロントエンドコード -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700 mb-3">フロントエンド側</h3>
+            
+            <div class="mb-4">
+              <div class="flex items-center mb-2">
+                <div class="bg-gray-200 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0 font-semibold">1</div>
+                <h4 class="font-medium">セッションID生成</h4>
+              </div>
+              <div class="bg-gray-100 rounded-lg p-3 text-sm font-mono overflow-x-auto">
+                <pre>// 初回アクセス時にセッションID生成
+const sessionId = crypto.randomUUID();
+localStorage.setItem('chatSessionId', sessionId);</pre>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <div class="flex items-center mb-2">
+                <div class="bg-gray-200 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0 font-semibold">2</div>
+                <h4 class="font-medium">リクエスト送信</h4>
+              </div>
+              <div class="bg-gray-100 rounded-lg p-3 text-sm font-mono overflow-x-auto">
+                <pre>// メッセージ送信時にセッションIDを含める
+fetch('/api/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Session-ID': localStorage.getItem('chatSessionId')
+  },
+  body: JSON.stringify({ message: userInput })
+});</pre>
+              </div>
+            </div>
+            
+            <div>
+              <div class="flex items-center mb-2">
+                <div class="bg-gray-200 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0 font-semibold">3</div>
+                <h4 class="font-medium">会話履歴管理（クライアント側）</h4>
+              </div>
+              <div class="bg-gray-100 rounded-lg p-3 text-sm font-mono overflow-x-auto">
+                <pre>// 会話履歴をローカルに保存
+function saveConversation(messages) {
+  localStorage.setItem('chatHistory', 
+    JSON.stringify(messages));
+}
+
+// 会話履歴の読み込み
+function loadConversation() {
+  const saved = localStorage.getItem('chatHistory');
+  return saved ? JSON.parse(saved) : [];
+}</pre>
+              </div>
+            </div>
+          </div>
+          
+          <!-- バックエンドコード -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700 mb-3">バックエンド側</h3>
+            
+            <div class="mb-4">
+              <div class="flex items-center mb-2">
+                <div class="bg-gray-200 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0 font-semibold">1</div>
+                <h4 class="font-medium">セッション管理（メモリ内）</h4>
+              </div>
+              <div class="bg-gray-100 rounded-lg p-3 text-sm font-mono overflow-x-auto">
+                <pre>// メモリ内セッションストア
+const sessions = new Map();
+
+// リクエスト処理
+app.post('/api/chat', (req, res) => {
+  const sessionId = req.headers['x-session-id'];
+  const userMessage = req.body.message;
+  
+  // セッション初期化（存在しない場合）
+  if (!sessions.has(sessionId)) {
+    sessions.set(sessionId, { 
+      messages: [],
+      botId: req.params.botId
+    });
+  }
+  
+  // 以降の処理...
+});</pre>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <div class="flex items-center mb-2">
+                <div class="bg-gray-200 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0 font-semibold">2</div>
+                <h4 class="font-medium">RAG処理</h4>
+              </div>
+              <div class="bg-gray-100 rounded-lg p-3 text-sm font-mono overflow-x-auto">
+                <pre>// セッションからボットIDを取得
+const { botId, messages } = sessions.get(sessionId);
+
+// ベ
